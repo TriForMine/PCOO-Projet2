@@ -56,4 +56,8 @@ public class Note {
                 ", time=" + time +
                 '}';
     }
+
+    public void setDuration(float duration) {
+        this.duration = duration;
+    }
 }

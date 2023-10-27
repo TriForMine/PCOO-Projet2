@@ -10,8 +10,8 @@ import java.io.IOException;
 
 public final class WavWriter implements  IWavWriter {
     public static final AudioFormat AudioFormat = new AudioFormat(
-            44100,
-            8,
+            WavSynthesizer.SampleRate,
+            WavSynthesizer.SampleSizeInBits,
             1,
             true,
             true

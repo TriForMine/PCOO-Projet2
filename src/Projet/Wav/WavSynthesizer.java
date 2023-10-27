@@ -3,12 +3,17 @@ package Projet.Wav;
 import Projet.Common.Note;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
 public final class WavSynthesizer {
     public static final IWavWriter WavWriter = new WavWriter();
     public static final Random Random = new Random();
+    public static final float SampleRate = 44100f;
+    public static final int SampleSizeInBits = 8;
+    public static final int MaxValue = (int) (Math.pow(2, SampleSizeInBits - 1d) - 1);
+    public static final int MinValue = -MaxValue - 1;
 
     private WavSynthesizer() {
         throw new IllegalStateException();
@@ -19,27 +24,27 @@ public final class WavSynthesizer {
     }
 
     private static int[] generateSquareWave(float frequency, float duration) {
-        int[] wave = new int[(int) (duration * 44100)];
+        int[] wave = new int[(int) (duration * SampleRate)];
         for (int i = 0; i < wave.length; i++) {
-            if ((4 * i % (44100f / frequency)) > 22050f / frequency) {
-                wave[i] = 127;
+            if ((4 * i % (SampleRate / frequency)) > (SampleRate / 2) / frequency) {
+                wave[i] = MaxValue;
             } else {
-                wave[i] = -128;
+                wave[i] = MinValue;
             }
         }
         return wave;
     }
 
     private static int[] generateWhiteNoise(float duration) {
-        int[] wave = new int[(int) (duration * 44100)];
+        int[] wave = new int[(int) (duration * SampleRate)];
         for (int i = 0; i < wave.length; i++) {
-            wave[i] = (Random.nextInt(255) - 128);
+            wave[i] = Random.nextInt(MinValue, MaxValue);
         }
         return wave;
     }
 
     private static int mix(int a, int b) {
-        return Math.max(-128, Math.min(127, a + b));
+        return Math.max(MinValue, Math.min(MaxValue, a + b));
     }
 
     private static int[] generateWavData(List<Note> notes) {
@@ -51,7 +56,7 @@ public final class WavSynthesizer {
         }
 
         // We generate the wave data for each note
-        int[] wave = new int[(int) (totalDuration * 44100)];
+        int[] wave = new int[(int) (totalDuration * SampleRate)];
 
         for (Note note : notes) {
             int[] noteWave;
@@ -62,7 +67,7 @@ public final class WavSynthesizer {
                 noteWave = generateSquareWave(note.getFrequency(), note.getDuration());
             }
 
-            int noteStart = (int) (note.getTime() * 44100);
+            int noteStart = (int) (note.getTime() * SampleRate);
 
             for (int i = 0; i < noteWave.length; i++) {
                 wave[noteStart + i] = mix(wave[noteStart + i], noteWave[i] * note.getVolume() / 127);
@@ -73,15 +78,10 @@ public final class WavSynthesizer {
     }
 
     private static byte[] convertToBytes(int[] wave) {
-        byte[] bytes = new byte[wave.length * 4];
-        for (int i = 0; i < wave.length; i++) {
-            ByteBuffer bb = ByteBuffer.allocate(4);
-            bb.putInt(wave[i]);
-            bytes[i * 4] = bb.get(0);
-            bytes[i * 4 + 1] = bb.get(1);
-            bytes[i * 4 + 2] = bb.get(2);
-            bytes[i * 4 + 3] = bb.get(3);
+        ByteBuffer bb = ByteBuffer.allocate(wave.length * 4);
+        for (int w : wave) {
+            bb.putInt(w);
         }
-        return bytes;
+        return bb.array();
     }
 }

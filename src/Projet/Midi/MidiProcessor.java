@@ -5,7 +5,9 @@ import Projet.Common.NoteEnum;
 
 import javax.sound.midi.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public final class MidiProcessor {
     public static final IMidiReader MidiReader = new MidiReader();
@@ -38,7 +40,7 @@ public final class MidiProcessor {
 
     public static List<Note> processMidiSequence(Sequence sequence) {
         List<Note> notes = new ArrayList<>();
-        float lastNoteTime = 0;
+        Map<Integer, Note> activeNotes = new HashMap<>();
 
         Track[] tracks = sequence.getTracks();
         for (Track track : tracks) {
@@ -47,17 +49,23 @@ public final class MidiProcessor {
                 float time = getTime(sequence, event);
 
                 if (event.getMessage() instanceof ShortMessage shortMessage) {
+                    int key = shortMessage.getData1();
                     if (shortMessage.getCommand() == ShortMessage.NOTE_ON) {
-                        lastNoteTime = time;
+                        Note note = processNoteOff(shortMessage, time, 0);
+                        activeNotes.put(key, note);
                     } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF) {
-                        float duration = time - lastNoteTime;
+                        Note note = activeNotes.remove(key);
 
-                        Note note = processNoteOff(shortMessage, time, duration);
-                        notes.add(note);
+                        if (note != null) {
+                            note.setDuration(time - note.getTime());
+                            notes.add(note);
+                        }
                     }
                 }
             }
         }
+
+        notes.addAll(activeNotes.values());
 
         return notes;
     }

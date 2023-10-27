@@ -15,9 +15,8 @@ public enum NoteEnum {
     Si(11);
 
     private final int value;
-    private int volume;
 
-    private NoteEnum(int value) {
+    NoteEnum(int value) {
         this.value = value;
     }
 
