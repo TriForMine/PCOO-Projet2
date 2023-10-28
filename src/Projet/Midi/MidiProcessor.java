@@ -2,6 +2,7 @@ package Projet.Midi;
 
 import Projet.Common.Note;
 import Projet.Common.NoteEnum;
+import Projet.Interfaces.IMidiReader;
 
 import javax.sound.midi.*;
 import java.util.ArrayList;
@@ -40,32 +41,32 @@ public final class MidiProcessor {
 
     public static List<Note> processMidiSequence(Sequence sequence) {
         List<Note> notes = new ArrayList<>();
-        Map<Integer, Note> activeNotes = new HashMap<>();
+        Map<Integer, Float> activeNotes = new HashMap<>();
+        int tempo = getTempo(sequence);
+        float timeFactor = 60.0f / ((tempo * sequence.getResolution()) << 2);
 
         Track[] tracks = sequence.getTracks();
         for (Track track : tracks) {
             for (int i = 0; i < track.size(); i++) {
                 MidiEvent event = track.get(i);
-                float time = getTime(sequence, event);
 
                 if (event.getMessage() instanceof ShortMessage shortMessage) {
-                    int key = shortMessage.getData1();
-                    if (shortMessage.getCommand() == ShortMessage.NOTE_ON) {
-                        Note note = processNoteOff(shortMessage, time, 0);
-                        activeNotes.put(key, note);
-                    } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF) {
-                        Note note = activeNotes.remove(key);
+                    int key = (shortMessage.getChannel() << 7) + shortMessage.getData1();
+                    float time = event.getTick() * timeFactor;
 
-                        if (note != null) {
-                            note.setDuration(time - note.getTime());
+                    if (shortMessage.getCommand() == ShortMessage.NOTE_ON) {
+                        activeNotes.put(key, time);
+                    } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF) {
+                        Float noteOnTime = activeNotes.remove(key);
+
+                        if (noteOnTime != null) {
+                            Note note = processNoteOff(shortMessage, time, time - noteOnTime);
                             notes.add(note);
                         }
                     }
                 }
             }
         }
-
-        notes.addAll(activeNotes.values());
 
         return notes;
     }
@@ -102,12 +103,5 @@ public final class MidiProcessor {
         }
 
         return 120;
-    }
-
-    private static float getTime(Sequence sequence, MidiEvent event) {
-        int tempo = getTempo(sequence);
-
-        long resolution = sequence.getResolution();
-        return ((float) event.getTick()) * 60 / (4 * tempo * resolution);
     }
 }

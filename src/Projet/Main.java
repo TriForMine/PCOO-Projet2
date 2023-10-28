@@ -1,12 +1,13 @@
 package Projet;
 
+import Projet.Converter.MidiToWavConverter;
 import Projet.Midi.MidiProcessor;
 import Projet.Wav.WavSynthesizer;
 
 public class Main {
     public static void main(String[] args) {
-        WavSynthesizer.createFile("fichier1.wav", MidiProcessor.processFile("fichier1.mid"));
-        WavSynthesizer.createFile("fichier2.wav", MidiProcessor.processFile("fichier2.mid"));
-        WavSynthesizer.createFile("fichier3.wav", MidiProcessor.processFile("fichier3.mid"));
+        MidiToWavConverter.convert("fichier1.mid", "fichier1.wav");
+        MidiToWavConverter.convert("fichier2.mid", "fichier2.wav");
+        MidiToWavConverter.convert("fichier3.mid", "fichier3.wav");
     }
 }

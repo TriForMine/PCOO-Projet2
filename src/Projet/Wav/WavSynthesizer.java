@@ -1,19 +1,18 @@
 package Projet.Wav;
 
 import Projet.Common.Note;
+import Projet.Interfaces.IWavWriter;
 
-import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicIntegerArray;
 
 public final class WavSynthesizer {
     public static final IWavWriter WavWriter = new WavWriter();
-    public static final Random Random = new Random();
-    public static final float SampleRate = 44100f;
-    public static final int SampleSizeInBits = 8;
-    public static final int MaxValue = (int) (Math.pow(2, SampleSizeInBits - 1d) - 1);
-    public static final int MinValue = -MaxValue - 1;
+    public static final float SAMPLE_RATE = 44100f;
+    public static final int SAMPLE_SIZE_IN_BITS = 8;
+    public static final int MAX_VALUE = (int) (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1d) - 1);
+    public static final int MIN_VALUE = -MAX_VALUE - 1;
 
     private WavSynthesizer() {
         throw new IllegalStateException();
@@ -24,64 +23,73 @@ public final class WavSynthesizer {
     }
 
     private static int[] generateSquareWave(float frequency, float duration) {
-        int[] wave = new int[(int) (duration * SampleRate)];
-        for (int i = 0; i < wave.length; i++) {
-            if ((4 * i % (SampleRate / frequency)) > (SampleRate / 2) / frequency) {
-                wave[i] = MaxValue;
+        int sampleRateFreqRatio = (int)(SAMPLE_RATE / frequency);
+        int sampleRateHalfFreqRatio = sampleRateFreqRatio >> 1;
+        int samplesCount = (int)(duration * SAMPLE_RATE);
+
+        int[] wave = new int[samplesCount];
+
+        for (int i = 0; i < samplesCount; i++) {
+            if (((i << 2) % sampleRateFreqRatio) > sampleRateHalfFreqRatio) {
+                wave[i] = MAX_VALUE;
             } else {
-                wave[i] = MinValue;
+                wave[i] = MIN_VALUE;
             }
         }
+
         return wave;
     }
 
     private static int[] generateWhiteNoise(float duration) {
-        int[] wave = new int[(int) (duration * SampleRate)];
-        for (int i = 0; i < wave.length; i++) {
-            wave[i] = Random.nextInt(MinValue, MaxValue);
-        }
-        return wave;
-    }
-
-    private static int mix(int a, int b) {
-        return Math.max(MinValue, Math.min(MaxValue, a + b));
+        int waveSize = (int) (duration * SAMPLE_RATE);
+        return ThreadLocalRandom.current()
+                .ints(waveSize, MIN_VALUE, MAX_VALUE)
+                .toArray();
     }
 
     private static int[] generateWavData(List<Note> notes) {
-        // Each note has a duration, and the time it starts at
-        // We need to find the total duration of the song
         float totalDuration = 0;
         for (Note note : notes) {
-            totalDuration = Math.max(totalDuration, note.getTime() + note.getDuration());
+            totalDuration = Math.max(totalDuration, note.time() + note.duration());
         }
 
-        // We generate the wave data for each note
-        int[] wave = new int[(int) (totalDuration * SampleRate)];
+        int[] wave = new int[(int) (totalDuration * SAMPLE_RATE)];
 
-        for (Note note : notes) {
+        AtomicIntegerArray atomicWave = new AtomicIntegerArray(wave.length);
+
+        notes.parallelStream().forEach(note -> {
             int[] noteWave;
 
-            if (note.getChannel() == 9) {
-                noteWave = generateWhiteNoise(note.getDuration());
+            if (note.channel() == 9) {
+                noteWave = generateWhiteNoise(note.duration());
             } else {
-                noteWave = generateSquareWave(note.getFrequency(), note.getDuration());
+                noteWave = generateSquareWave(note.getFrequency(), note.duration());
             }
 
-            int noteStart = (int) (note.getTime() * SampleRate);
+            int noteStart = (int) (note.time() * SAMPLE_RATE);
+            float volume = note.volume() / 127f;
 
             for (int i = 0; i < noteWave.length; i++) {
-                wave[noteStart + i] = mix(wave[noteStart + i], noteWave[i] * note.getVolume() / 127);
+                int waveIndex = noteStart + i;
+                atomicWave.getAndAdd(waveIndex, (int) (noteWave[i] * volume));
             }
+        });
+
+        for (int i = 0; i < wave.length; i++) {
+            wave[i] = Math.max(MIN_VALUE, Math.min(MAX_VALUE, atomicWave.get(i)));
         }
 
         return wave;
     }
 
     private static byte[] convertToBytes(int[] wave) {
-        ByteBuffer bb = ByteBuffer.allocate(wave.length * 4);
-        for (int w : wave) {
-            bb.putInt(w);
+        byte[] bytes = new byte[wave.length << 2];
+        for (int i = 0; i < wave.length; i++) {
+            bytes[i * 4] = (byte) (wave[i] >> 24);
+            bytes[i * 4 + 1] = (byte) (wave[i] >> 16);
+            bytes[i * 4 + 2] = (byte) (wave[i] >> 8);
+            bytes[i * 4 + 3] = (byte) (wave[i]);
         }
-        return bb.array();
+        return bytes;
     }
 }

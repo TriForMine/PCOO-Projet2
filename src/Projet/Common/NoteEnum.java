@@ -1,18 +1,18 @@
 package Projet.Common;
 
 public enum NoteEnum {
-    Do(0),
-    DoSharp(1),
-    Re(2),
-    ReSharp(3),
-    Mi(4),
-    Fa(5),
-    FaSharp(6),
-    Sol(7),
-    SolSharp(8),
-    La(9),
-    LaSharp(10),
-    Si(11);
+    DO(0),
+    DO_SHARP(1),
+    RE(2),
+    RE_SHARP(3),
+    MI(4),
+    FA(5),
+    FA_SHARP(6),
+    SOL(7),
+    SOL_SHARP(8),
+    LA(9),
+    LA_SHARP(10),
+    SI(11);
 
     private final int value;
 
@@ -26,36 +26,36 @@ public enum NoteEnum {
 
     public static NoteEnum fromValue(int value) {
         return switch (value) {
-            case 0 -> Do;
-            case 1 -> DoSharp;
-            case 2 -> Re;
-            case 3 -> ReSharp;
-            case 4 -> Mi;
-            case 5 -> Fa;
-            case 6 -> FaSharp;
-            case 7 -> Sol;
-            case 8 -> SolSharp;
-            case 9 -> La;
-            case 10 -> LaSharp;
-            case 11 -> Si;
+            case 0 -> DO;
+            case 1 -> DO_SHARP;
+            case 2 -> RE;
+            case 3 -> RE_SHARP;
+            case 4 -> MI;
+            case 5 -> FA;
+            case 6 -> FA_SHARP;
+            case 7 -> SOL;
+            case 8 -> SOL_SHARP;
+            case 9 -> LA;
+            case 10 -> LA_SHARP;
+            case 11 -> SI;
             default -> null;
         };
     }
 
     public float getOctave4Frequency() {
         return switch (this) {
-            case Si -> 493.883f;
-            case LaSharp -> 466.164f;
-            case La -> 440.000f;
-            case SolSharp -> 415.305f;
-            case Sol -> 391.995f;
-            case FaSharp -> 369.994f;
-            case Fa -> 349.228f;
-            case Mi -> 329.628f;
-            case ReSharp -> 311.127f;
-            case Re -> 293.665f;
-            case DoSharp -> 277.183f;
-            case Do -> 261.626f;
+            case SI -> 493.883f;
+            case LA_SHARP -> 466.164f;
+            case LA -> 440.000f;
+            case SOL_SHARP -> 415.305f;
+            case SOL -> 391.995f;
+            case FA_SHARP -> 369.994f;
+            case FA -> 349.228f;
+            case MI -> 329.628f;
+            case RE_SHARP -> 311.127f;
+            case RE -> 293.665f;
+            case DO_SHARP -> 277.183f;
+            case DO -> 261.626f;
         };
     }
 
@@ -66,18 +66,18 @@ public enum NoteEnum {
     @Override
     public String toString() {
         return switch (this) {
-            case Si -> "Si";
-            case LaSharp -> "La#";
-            case La -> "La";
-            case SolSharp -> "Sol#";
-            case Sol -> "Sol";
-            case FaSharp -> "Fa#";
-            case Fa -> "Fa";
-            case Mi -> "Mi";
-            case ReSharp -> "Re#";
-            case Re -> "Re";
-            case DoSharp -> "Do#";
-            case Do -> "Do";
+            case SI -> "Si";
+            case LA_SHARP -> "La#";
+            case LA -> "La";
+            case SOL_SHARP -> "Sol#";
+            case SOL -> "Sol";
+            case FA_SHARP -> "Fa#";
+            case FA -> "Fa";
+            case MI -> "Mi";
+            case RE_SHARP -> "Re#";
+            case RE -> "Re";
+            case DO_SHARP -> "Do#";
+            case DO -> "Do";
         };
     }
 }

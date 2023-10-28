@@ -1,4 +1,4 @@
-package Projet.Midi;
+package Projet.Interfaces;
 
 import javax.sound.midi.Sequence;
 
