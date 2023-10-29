@@ -22,7 +22,7 @@ public final class MidiProcessor {
         return processMidiSequence(sequence);
     }
 
-    private static Note processNote(ShortMessage message, double time, float duration) {
+    private static Note processNote(ShortMessage message, double time) {
         int channel = message.getChannel();
         int key = message.getData1();
         int octave = getOctave(key);
@@ -34,7 +34,7 @@ public final class MidiProcessor {
                 octave,
                 NoteEnum.fromValue(noteNumber),
                 volume,
-                duration,
+                0.,
                 time
         );
     }
@@ -55,7 +55,7 @@ public final class MidiProcessor {
                     double time = event.getTick() * timeFactor;
 
                     if (shortMessage.getCommand() == ShortMessage.NOTE_ON  && shortMessage.getData2() != 0) {
-                        activeNotes.put(key, processNote(shortMessage, time, 0));
+                        activeNotes.put(key, processNote(shortMessage, time));
                     } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF || (shortMessage.getCommand() == ShortMessage.NOTE_ON && shortMessage.getData2() == 0) || shortMessage.getCommand() == ShortMessage.PROGRAM_CHANGE) {
                         Note note = activeNotes.remove(key);
 
@@ -74,7 +74,7 @@ public final class MidiProcessor {
                             notes.add(note);
 
                             // We create a new note with the new volume
-                            activeNotes.put(key, processNote(shortMessage, time, 0));
+                            activeNotes.put(key, processNote(shortMessage, time));
                         }
                     }
                 }
