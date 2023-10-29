@@ -22,7 +22,7 @@ public final class MidiProcessor {
         return processMidiSequence(sequence);
     }
 
-    private static Note processNoteOff(ShortMessage message, float time, float duration) {
+    private static Note processNote(ShortMessage message, double time, float duration) {
         int channel = message.getChannel();
         int key = message.getData1();
         int octave = getOctave(key);
@@ -41,9 +41,9 @@ public final class MidiProcessor {
 
     public static List<Note> processMidiSequence(Sequence sequence) {
         List<Note> notes = new ArrayList<>();
-        Map<Integer, Float> activeNotes = new HashMap<>();
+        Map<Integer, Note> activeNotes = new HashMap<>();
         int tempo = getTempo(sequence);
-        float timeFactor = 60.0f / ((tempo * sequence.getResolution()) << 2);
+        double timeFactor = 60.0d / ((tempo * sequence.getResolution()) << 2);
 
         Track[] tracks = sequence.getTracks();
         for (Track track : tracks) {
@@ -52,16 +52,29 @@ public final class MidiProcessor {
 
                 if (event.getMessage() instanceof ShortMessage shortMessage) {
                     int key = (shortMessage.getChannel() << 7) + shortMessage.getData1();
-                    float time = event.getTick() * timeFactor;
+                    double time = event.getTick() * timeFactor;
 
-                    if (shortMessage.getCommand() == ShortMessage.NOTE_ON) {
-                        activeNotes.put(key, time);
-                    } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF) {
-                        Float noteOnTime = activeNotes.remove(key);
+                    if (shortMessage.getCommand() == ShortMessage.NOTE_ON  && shortMessage.getData2() != 0) {
+                        activeNotes.put(key, processNote(shortMessage, time, 0));
+                    } else if (shortMessage.getCommand() == ShortMessage.NOTE_OFF || (shortMessage.getCommand() == ShortMessage.NOTE_ON && shortMessage.getData2() == 0) || shortMessage.getCommand() == ShortMessage.PROGRAM_CHANGE) {
+                        Note note = activeNotes.remove(key);
 
-                        if (noteOnTime != null) {
-                            Note note = processNoteOff(shortMessage, time, time - noteOnTime);
+                        if (note != null) {
+                            note.setDuration(time - note.getTime());
                             notes.add(note);
+                        }
+
+                        // Volume change
+                    } else if (shortMessage.getCommand() == ShortMessage.CONTROL_CHANGE) {
+                        Note note = activeNotes.remove(key);
+
+                        if (note != null) {
+                            // We add the current note to the list
+                            note.setDuration(time - note.getTime());
+                            notes.add(note);
+
+                            // We create a new note with the new volume
+                            activeNotes.put(key, processNote(shortMessage, time, 0));
                         }
                     }
                 }
