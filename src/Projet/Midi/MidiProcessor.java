@@ -5,6 +5,7 @@ import Projet.Common.NoteEnum;
 import Projet.Interfaces.IMidiReader;
 
 import javax.sound.midi.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +18,7 @@ public final class MidiProcessor {
         throw new IllegalStateException();
     }
 
-    public static List<Note> processFile(String path) {
+    public static List<Note> processFile(String path) throws InvalidMidiDataException, IOException {
         Sequence sequence = MidiReader.getMidiSequence(path);
         return processMidiSequence(sequence);
     }
@@ -43,7 +44,7 @@ public final class MidiProcessor {
         List<Note> notes = new ArrayList<>();
         Map<Integer, Note> activeNotes = new HashMap<>();
         int tempo = getTempo(sequence);
-        double timeFactor = 60.0d / ((tempo * sequence.getResolution()) << 2);
+        double timeFactor = 60.0d / (tempo * sequence.getResolution());
 
         Track[] tracks = sequence.getTracks();
         for (Track track : tracks) {

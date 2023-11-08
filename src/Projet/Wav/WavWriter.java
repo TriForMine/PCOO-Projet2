@@ -20,17 +20,14 @@ public final class WavWriter implements IWavWriter {
     );
 
     @Override
-    public void writeWavFile(String path, byte[] data) {
+    public void writeWavFile(String path, byte[] data) throws IOException {
         AudioInputStream ais = new AudioInputStream(
                 new ByteArrayInputStream(data),
                 AudioFormat,
                 data.length / AudioFormat.getFrameSize()
         );
         File file = new File(path);
-        try {
-            AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+
+        AudioSystem.write(ais, AudioFileFormat.Type.WAVE, file);
     }
 }

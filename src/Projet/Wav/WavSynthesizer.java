@@ -3,6 +3,7 @@ package Projet.Wav;
 import Projet.Common.Note;
 import Projet.Interfaces.IWavWriter;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicIntegerArray;
@@ -10,7 +11,7 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 public final class WavSynthesizer {
     public static final IWavWriter WavWriter = new WavWriter();
     public static final float SAMPLE_RATE = 65536;
-    public static final int SAMPLE_SIZE_IN_BITS = 8;
+    public static final int SAMPLE_SIZE_IN_BITS = 16;
     public static final int MAX_VALUE = (int) (Math.pow(2, SAMPLE_SIZE_IN_BITS - 1d) - 1);
     public static final int MIN_VALUE = -MAX_VALUE - 1;
 
@@ -18,7 +19,7 @@ public final class WavSynthesizer {
         throw new IllegalStateException();
     }
 
-    public static void createFile(String path, List<Note> notes) {
+    public static void createFile(String path, List<Note> notes) throws IOException {
         WavWriter.writeWavFile(path, convertToBytes(generateWavData(notes)));
     }
 
@@ -130,13 +131,16 @@ public final class WavSynthesizer {
     }
 
     private static byte[] convertToBytes(int[] wave) {
-        byte[] bytes = new byte[wave.length * 4];
+        byte[] bytes = new byte[wave.length * (SAMPLE_SIZE_IN_BITS / 8)];
+        // Signed SAMPLE_SIZE_IN_BITS-bit, big-endian
         for (int i = 0; i < wave.length; i++) {
-            bytes[i << 2] = (byte) (wave[i] & 0xFF);
-            bytes[(i << 2) + 1] = (byte) ((wave[i] >> 8) & 0xFF);
-            bytes[(i << 2) + 2] = (byte) ((wave[i] >> 16) & 0xFF);
-            bytes[(i << 2) + 3] = (byte) ((wave[i] >> 24) & 0xFF);
+            int sample = wave[i];
+
+            for (int j = 0; j < SAMPLE_SIZE_IN_BITS / 8; j++) {
+                bytes[i * (SAMPLE_SIZE_IN_BITS / 8) + j] = (byte) (sample >> (8 * (SAMPLE_SIZE_IN_BITS / 8 - j - 1)));
+            }
         }
+
         return bytes;
     }
 }
